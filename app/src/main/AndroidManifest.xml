@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:label="喵喵记账Fixer"
+        android:allowBackup="false">
+
+        <meta-data
+            android:name="xposedmodule"
+            android:value="true" />
+        <meta-data
+            android:name="xposeddescription"
+            android:value="修复喵喵记账TracingMuxer空转导致超大核异常占用的问题" />
+        <meta-data
+            android:name="xposedminversion"
+            android:value="93" />
+
+        <!-- LSPosed推荐作用域：默认勾选喵喵记账 -->
+        <meta-data
+            android:name="xposedscope"
+            android:value="com.youqi.miaomiao" />
+    </application>
+
+</manifest>
