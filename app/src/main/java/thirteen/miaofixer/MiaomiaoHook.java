@@ -19,11 +19,18 @@ public class MiaomiaoHook implements IXposedHookLoadPackage {
     private static final String SCREEN_CAPTURE_SERVICE =
             "com.lanniser.kittykeeping.service.ScreenCaptureService";
 
+    // 无障碍OCR类路径
+    private static final String ACCESSIBILITY_NATIVE =
+            "com.mlethe.library.accessibility.auto.AccessibilityNative";
+
     // 强制停止超时：2分钟
     private static final long FORCE_STOP_DELAY_MS = 2 * 60 * 1000L;
 
     // TracingMuxer 最小 sleep 间隔
     private static final long MIN_SLEEP_MS = 500L;
+
+    // AccessibilityNative 每次调用后强制节流间隔
+    private static final long ACCESSIBILITY_THROTTLE_MS = 50L;
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
@@ -33,6 +40,7 @@ public class MiaomiaoHook implements IXposedHookLoadPackage {
 
         hookScreenCaptureService(lpparam);
         hookTracingMuxerSleep();
+        hookAccessibilityNative(lpparam);
     }
 
     /**
@@ -97,6 +105,29 @@ public class MiaomiaoHook implements IXposedHookLoadPackage {
             XposedBridge.log("[MiaomiaoHook] Hook2 TracingMuxer.sleep 注册成功");
         } catch (Throwable t) {
             XposedBridge.log("[MiaomiaoHook] Hook2 注册失败: " + t.getMessage());
+        }
+    }
+
+    /**
+     * Hook 3: 拦截 AccessibilityNative.convertData，仅针对 Thread-18
+     * 修复无障碍OCR服务 native 层死循环导致的超大核满载
+     * 触发条件：喵喵记账无障碍服务常驻开机，Thread-18持续调用 libautoIdentify.so
+     * 策略：每次调用后强制 sleep 50ms，将无限速循环限制为每秒最多 20 次
+     * 使用 hookAllMethods 避免方法签名不匹配问题
+     */
+    private void hookAccessibilityNative(XC_LoadPackage.LoadPackageParam lpparam) {
+        try {
+            Class<?> clazz = XposedHelpers.findClass(ACCESSIBILITY_NATIVE, lpparam.classLoader);
+            XposedBridge.hookAllMethods(clazz, "convertData", new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    if (!"Thread-18".equals(Thread.currentThread().getName())) return;
+                    Thread.sleep(ACCESSIBILITY_THROTTLE_MS);
+                }
+            });
+            XposedBridge.log("[MiaomiaoHook] Hook3 AccessibilityNative.convertData 注册成功");
+        } catch (Throwable t) {
+            XposedBridge.log("[MiaomiaoHook] Hook3 注册失败: " + t.getMessage());
         }
     }
 }
