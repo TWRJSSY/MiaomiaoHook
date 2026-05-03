@@ -10,7 +10,7 @@
             android:value="true" />
         <meta-data
             android:name="xposeddescription"
-            android:value="修复喵喵记账TracingMuxer空转导致超大核异常占用的问题" />
+            android:value="修复喵喵记账超大核占用异常的问题" />
         <meta-data
             android:name="xposedminversion"
             android:value="93" />
